@@ -45,7 +45,7 @@ button{border:0;border-radius:9px;padding:12px 18px;font:700 14px "Segoe UI",Ari
   <p class="sub">Formulario digital de inducción, entregables y seguimiento de competencias</p>
 </header>
 <main>
-  <div class="notice"><strong>Prototipo de prueba:</strong> esta versión no guarda información en una base de datos ni envía respuestas por Internet. Puedes completar el formulario, revisar el resumen e imprimirlo o guardarlo como PDF desde el navegador.</div>
+  <div class="notice"><strong>Formulario de prueba:</strong> al enviar, el formulario intentará registrar la información en la base de datos de Google Sheets. Verifica siempre las pestañas Incorporaciones y Detalle_Checklist antes de considerar confirmado el registro.</div>
   <form id="sopForm">
     <section class="card">
       <h2>1. Identificación de la incorporación</h2>
@@ -124,15 +124,87 @@ document.getElementById('printBtn').addEventListener('click',()=>window.print())
 document.getElementById('clearBtn').addEventListener('click',()=>{
  if(confirm('¿Quieres limpiar todos los campos del formulario?')){document.getElementById('sopForm').reset();document.getElementById('preview').style.display='none';updateProgress();window.scrollTo({top:0,behavior:'smooth'})}
 });
-document.getElementById('sopForm').addEventListener('submit',(e)=>{
+document.getElementById('sopForm').addEventListener('submit', async (e) => {
  e.preventDefault();
- const f=e.currentTarget; if(!f.reportValidity())return;
- const data=new FormData(f); const total=document.querySelectorAll('#checklist select').length;
- const done=[...document.querySelectorAll('#checklist select')].filter(s=>s.value==='Finalizado'||s.value==='No aplica').length;
- const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const preview=document.getElementById('preview');
- preview.innerHTML='<h2>Resumen de revisión</h2><p><strong>Trabajador:</strong> '+esc(data.get('trabajador'))+'</p><p><strong>Proyecto:</strong> '+esc(data.get('proyecto')||'No indicado')+' · <strong>Supervisor:</strong> '+esc(data.get('supervisor')||'No indicado')+'</p><p><strong>Avance de puntos cerrados:</strong> '+Math.round(done/total*100)+'% ('+done+' de '+total+')</p><p><strong>Estado general:</strong> '+esc(data.get('estadoGeneral'))+'</p><p>Este resumen no se ha guardado en una base de datos. Puedes imprimirlo o guardarlo como PDF.</p>';
- preview.style.display='block';preview.scrollIntoView({behavior:'smooth',block:'start'});
+ const f = e.currentTarget;
+ if (!f.reportValidity()) return;
+
+ const boton = f.querySelector('button[type="submit"]');
+ const textoOriginal = boton.textContent;
+ boton.disabled = true;
+ boton.textContent = 'Enviando...';
+
+ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+   '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+ }[c]));
+ const preview = document.getElementById('preview');
+
+ try {
+   // Campos generales del formulario.
+   const data = Object.fromEntries(new FormData(f).entries());
+
+   // Cada punto del checklist incluye estado, observaciones y aplicabilidad.
+   data.items = [...document.querySelectorAll('#checklist .item')].map(row => {
+     const nombre = row.querySelector('.item-title')?.textContent.trim() || '';
+     const estado = row.querySelector('select')?.value || 'Pendiente';
+     const observaciones = row.querySelector('input:not([type="checkbox"])')?.value || '';
+     const checks = [...row.querySelectorAll('input[type="checkbox"]')];
+     const aplicaEM = checks[0]?.checked || false;
+     const aplicaCodelco = checks[1]?.checked || false;
+     const aplicaRCA = checks[2]?.checked || false;
+     const aplicabilidad = [
+       aplicaEM ? 'EM' : '',
+       aplicaCodelco ? 'Codelco' : '',
+       aplicaRCA ? 'RCA' : ''
+     ].filter(Boolean).join(', ');
+
+     return {
+       punto: nombre,
+       estado: estado,
+       observaciones: [observaciones, aplicabilidad ? 'Aplica: ' + aplicabilidad : '']
+         .filter(Boolean).join(' | '),
+       aplicaEM: aplicaEM,
+       aplicaCodelco: aplicaCodelco,
+       aplicaRCA: aplicaRCA
+     };
+   });
+
+   // Apps Script recibe el JSON mediante doPost(e).
+   // no-cors impide leer la respuesta del servidor desde el navegador;
+   // por eso se debe comprobar el resultado directamente en Google Sheets.
+   await fetch(
+     'https://script.google.com/macros/s/AKfycbw3H16n3-jvLEvDQg45Zg8ZdMeQirOhmvw0PSxoOXHRV4uulvE8Ml9RM8h6cZVZl-4/exec',
+     {
+       method: 'POST',
+       mode: 'no-cors',
+       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+       body: JSON.stringify(data)
+     }
+   );
+
+   const total = data.items.length;
+   const done = data.items.filter(i => i.estado === 'Finalizado' || i.estado === 'No aplica').length;
+   preview.innerHTML =
+     '<h2>Envío realizado: pendiente de verificación</h2>' +
+     '<p><strong>Trabajador:</strong> ' + esc(data.trabajador) + '</p>' +
+     '<p><strong>Proyecto:</strong> ' + esc(data.proyecto || 'No indicado') +
+     ' · <strong>Supervisor:</strong> ' + esc(data.supervisor || 'No indicado') + '</p>' +
+     '<p><strong>Avance de puntos cerrados:</strong> ' + Math.round(done / total * 100) +
+     '% (' + done + ' de ' + total + ')</p>' +
+     '<p><strong>Estado general:</strong> ' + esc(data.estadoGeneral || 'No indicado') + '</p>' +
+     '<p>El navegador envió la solicitud, pero no puede confirmar la respuesta del servidor. ' +
+     'Abre Google Sheets y verifica que se haya creado un registro en las pestañas ' +
+     '<strong>Incorporaciones</strong> y <strong>Detalle_Checklist</strong>. Si no aparece, ' +
+     'no vuelvas a enviar información real; revisaremos la conexión.</p>';
+   preview.style.display = 'block';
+   preview.scrollIntoView({ behavior: 'smooth', block: 'start' });
+ } catch (error) {
+   console.error('Error al enviar el formulario:', error);
+   alert('No se pudo completar la solicitud. Revisa tu conexión e inténtalo nuevamente.');
+ } finally {
+   boton.disabled = false;
+   boton.textContent = textoOriginal;
+ }
 });
 updateProgress();
 </script>
