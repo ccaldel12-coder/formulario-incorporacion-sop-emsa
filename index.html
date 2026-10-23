@@ -21,7 +21,8 @@ input,select,textarea{font:inherit;border:1px solid #cbd6df;border-radius:8px;pa
 input:focus,select:focus,textarea:focus{outline:2px solid #9ac5e0;border-color:#4387b2}
 .progress-wrap{display:flex;gap:12px;align-items:center;margin-bottom:16px}.progress{height:8px;border-radius:20px;background:#e5edf2;overflow:hidden;flex:1}.bar{height:100%;width:0;background:var(--blue);transition:width .2s}.progress-text{font-size:12px;color:var(--muted);white-space:nowrap}
 .section{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:14px 0;background:#fff}
-.section-head{background:#eaf1f6;padding:13px 16px;color:var(--navy);font-weight:750;display:flex;justify-content:space-between;gap:10px}
+.section-head{background:#eaf1f6;padding:13px 16px;color:var(--navy);font-weight:750;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.section-title{display:flex;align-items:center;gap:10px;min-width:0}.section-toggle{background:#d8e6ef;color:var(--navy);padding:7px 11px;border-radius:7px;font-size:12px;white-space:nowrap}.section-content[hidden]{display:none!important}
 .section-count{font-size:12px;color:var(--muted);font-weight:600}
 .item{padding:15px 16px;border-top:1px solid #e9eef2;display:grid;grid-template-columns:minmax(0,1.4fr) minmax(140px,.65fr);gap:14px}
 .item-title{font-weight:650}.item-note{font-size:12px;color:var(--muted);margin-top:5px}
@@ -34,7 +35,7 @@ button{border:0;border-radius:9px;padding:12px 18px;font:700 14px "Segoe UI",Ari
 .small{font-size:12px;color:var(--muted)}.required{color:#b42318}
 @media(max-width:720px){.grid{grid-template-columns:1fr 1fr}.item{grid-template-columns:1fr}.card{padding:15px}}
 @media(max-width:460px){.grid{grid-template-columns:1fr}.item{padding:13px}}
-@media print{body{background:white}header{padding:20px;background:#12304a!important;print-color-adjust:exact}.notice,footer,.progress-wrap{display:none!important}main{margin:0;max-width:none}.card,.section{break-inside:avoid;box-shadow:none}.item{break-inside:avoid}}
+@media print{body{background:white}header{padding:20px;background:#12304a!important;print-color-adjust:exact}.notice,footer,.progress-wrap,.section-toggle{display:none!important}main{margin:0;max-width:none}.card,.section{break-inside:avoid;box-shadow:none}.section-content[hidden]{display:block!important}.item{break-inside:avoid}}
 </style>
 </head>
 <body>
@@ -45,7 +46,6 @@ button{border:0;border-radius:9px;padding:12px 18px;font:700 14px "Segoe UI",Ari
   <p class="sub">Formulario digital de inducción, entregables y seguimiento de competencias</p>
 </header>
 <main>
-  <div class="notice"><strong>Formulario de prueba:</strong> al enviar, el formulario intentará registrar la información en la base de datos de Google Sheets. Verifica siempre las pestañas Incorporaciones y Detalle_Checklist antes de considerar confirmado el registro.</div>
   <form id="sopForm">
     <section class="card">
       <h2>1. Identificación de la incorporación</h2>
@@ -80,7 +80,7 @@ button{border:0;border-radius:9px;padding:12px 18px;font:700 14px "Segoe UI",Ari
     <footer>
       <button type="button" class="secondary" id="clearBtn">Limpiar formulario</button>
       <button type="button" class="secondary" id="printBtn">Imprimir / Guardar PDF</button>
-      <button type="submit" class="primary">Revisar resumen</button>
+      <button type="submit" class="primary">Finalizar formulario</button>
     </footer>
   </form>
   <section id="preview" aria-live="polite"></section>
@@ -92,9 +92,24 @@ let itemIndex = 0;
 sections.forEach((section, sIndex) => {
   const wrap = document.createElement('div'); wrap.className = 'section';
   const head = document.createElement('div'); head.className = 'section-head';
+  const titleWrap = document.createElement('div'); titleWrap.className = 'section-title';
   const title = document.createElement('span'); title.textContent = section.name;
   const count = document.createElement('span'); count.className='section-count'; count.textContent = section.items.length + ' puntos';
-  head.append(title,count); wrap.appendChild(head);
+  titleWrap.append(title, count);
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'section-toggle';
+  toggle.textContent = 'Contraer';
+  toggle.setAttribute('aria-expanded', 'true');
+  const content = document.createElement('div'); content.className = 'section-content';
+  toggle.addEventListener('click', () => {
+    const expandir = content.hidden;
+    content.hidden = !expandir;
+    toggle.textContent = expandir ? 'Contraer' : 'Expandir';
+    toggle.setAttribute('aria-expanded', String(expandir));
+  });
+  head.append(titleWrap, toggle);
+  wrap.append(head, content);
   section.items.forEach((item) => {
     const id = 'item_' + itemIndex++;
     const row = document.createElement('div'); row.className='item';
@@ -108,7 +123,7 @@ sections.forEach((section, sIndex) => {
     const obs = document.createElement('input'); obs.name=id+'_obs'; obs.placeholder='Observación (opcional)'; obs.setAttribute('aria-label','Observación: '+item.item);
     const checks = document.createElement('div'); checks.className='checks';
     ['EM','Codelco','RCA'].forEach(v=>{const lab=document.createElement('label');const cb=document.createElement('input');cb.type='checkbox';cb.name=id+'_aplica_'+v;cb.value='Sí';lab.append(cb,document.createTextNode(v));checks.appendChild(lab)});
-    controls.append(status,obs,checks); row.append(desc,controls);wrap.appendChild(row);
+    controls.append(status,obs,checks); row.append(desc,controls);content.appendChild(row);
     status.addEventListener('change',updateProgress);
   });
   container.appendChild(wrap);
@@ -120,7 +135,20 @@ function updateProgress(){
  document.getElementById('progressBar').style.width=pct+'%';
  document.getElementById('progressText').textContent=pct+'% completado · '+done+' de '+selects.length+' puntos cerrados';
 }
-document.getElementById('printBtn').addEventListener('click',()=>window.print());
+document.getElementById('printBtn').addEventListener('click', () => {
+ const trabajador = document.querySelector('[name="trabajador"]').value.trim() || 'Trabajador';
+ const rut = document.querySelector('[name="rut"]').value.trim() || 'Sin-RUT';
+ const limpiarNombre = texto => texto
+   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+   .replace(/[^a-zA-Z0-9._-]+/g, '_')
+   .replace(/^_+|_+$/g, '');
+ const nombreOriginal = document.title;
+ const nombrePDF = 'Formulario_SOP_EMSA_' + limpiarNombre(trabajador) + '_' + limpiarNombre(rut);
+ document.title = nombrePDF;
+ const restaurarTitulo = () => { document.title = nombreOriginal; };
+ window.addEventListener('afterprint', restaurarTitulo, { once: true });
+ window.print();
+});
 document.getElementById('clearBtn').addEventListener('click',()=>{
  if(confirm('¿Quieres limpiar todos los campos del formulario?')){document.getElementById('sopForm').reset();document.getElementById('preview').style.display='none';updateProgress();window.scrollTo({top:0,behavior:'smooth'})}
 });
