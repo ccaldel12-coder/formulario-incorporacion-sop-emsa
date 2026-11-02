@@ -148,7 +148,7 @@ document.getElementById('sopForm').addEventListener('submit',async e=>{
    return {punto,estado:delivery?delivery.value:(status?.value||'Pendiente'),observaciones:obs,
     aplicaEM,aplicaCodelco,aplicaRCA};
   });
-  await fetch('https://script.google.com/macros/s/AKfycbw3H16n3-jvLEvDQg45Zg8ZdMeQirOhmvw0PSxoOXHRV4uulvE8Ml9RM8h6cZVZl-4/exec',{
+  await fetch('https://script.google.com/macros/s/AKfycbwDPvj34J_-UDf4pU0ciMjSjNV2-yf8_cFEt7BIZkEKreeFBagerO9HGQBYv9bk0KAK/exec',{
    method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(data)
   });
   const total=data.items.length,done=data.items.filter(i=>i.estado==='Finalizado'||i.estado==='No aplica'||i.estado==='SI').length;
