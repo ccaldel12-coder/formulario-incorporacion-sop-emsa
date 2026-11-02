@@ -7,9 +7,9 @@
 <style>
 :root{--navy:#12304a;--blue:#1f5b85;--pale:#edf4f8;--line:#d7e0e7;--ink:#1e2933;--muted:#607080;--white:#fff}
 *{box-sizing:border-box}body{margin:0;background:#f3f6f8;color:var(--ink);font:15px/1.45 "Segoe UI",Arial,sans-serif}
-header{background:linear-gradient(120deg,#102b43,#205b80);color:white;padding:26px max(20px,calc((100% - 1100px)/2))}
- .header-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:22px}
-.logo-emsa{display:block;width:240px;height:auto;max-height:none;object-fit:contain;flex:0 0 240px;background:#fff;border-radius:6px;padding:7px}
+header{background:linear-gradient(120deg,#102b43,#205b80);color:white;padding:18px 40px}
+ .header-inner{width:100%;max-width:none;margin:0;display:flex;align-items:center;gap:24px}
+.logo-emsa{display:block;width:320px;height:auto;max-height:none;object-fit:contain;flex:0 0 320px;background:#fff;border-radius:6px;padding:7px}
 .header-copy{min-width:0}
 .brand{font-size:12px;letter-spacing:.16em;text-transform:uppercase;opacity:.8;font-weight:700}
 h1{font-size:clamp(25px,4vw,36px);line-height:1.15;margin:8px 0}.sub{color:#d8e7f1;margin:0}
@@ -33,8 +33,8 @@ button{border:0;border-radius:9px;padding:12px 18px;font:700 14px "Segoe UI",Ari
 .primary{background:var(--navy);color:white}.secondary{background:#e6edf2;color:var(--navy)}button:hover{filter:brightness(.97)}
 #preview{display:none;border:1px solid #b7d8c2;background:#f0faf3;padding:14px;border-radius:10px;margin-top:14px}
 .small{font-size:12px;color:var(--muted)}.required{color:#b42318}
-@media(max-width:720px){.grid{grid-template-columns:1fr 1fr}.item{grid-template-columns:1fr}.card{padding:15px}.header-inner{gap:18px}.logo-emsa{width:190px;flex-basis:190px}}
-@media(max-width:460px){.grid{grid-template-columns:1fr}.item{padding:13px}.logo-emsa{width:150px;flex-basis:150px}.brand{font-size:10px}h1{font-size:24px}}
+@media(max-width:720px){.grid{grid-template-columns:1fr 1fr}.item{grid-template-columns:1fr}.card{padding:15px}header{padding:18px 20px}.header-inner{gap:18px}.logo-emsa{width:190px;flex-basis:190px}}
+@media(max-width:460px){.grid{grid-template-columns:1fr}.item{padding:13px}header{padding:16px}.header-inner{gap:14px}.logo-emsa{width:135px;flex-basis:135px}.brand{font-size:10px}h1{font-size:24px}}
 @media print{body{background:white}header{padding:20px;background:#12304a!important;print-color-adjust:exact}footer,.progress-wrap,.section-toggle{display:none!important}main{margin:0;max-width:none}.card,.section{break-inside:avoid;box-shadow:none}.section-content[hidden]{display:block!important}.item{break-inside:avoid}}
 </style>
 </head>
